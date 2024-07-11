@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D City Garden with Birds</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer, buildings, garden, birds;
+        const clock = new THREE.Clock();
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x87CEEB); // Sky color
+            document.body.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7);
+            scene.add(directionalLight);
+
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(100, 100);
+            const groundMaterial = new THREE.MeshLambertMaterial({color: 0x7CFC00});
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            scene.add(ground);
+
+            // Buildings
+            buildings = new THREE.Group();
+            for (let i = 0; i < 20; i++) {
+                const height = Math.random() * 5 + 2;
+                const geometry = new THREE.BoxGeometry(1, height, 1);
+                const material = new THREE.MeshPhongMaterial({color: Math.random() * 0xffffff});
+                const building = new THREE.Mesh(geometry, material);
+                building.position.set(Math.random() * 30 - 15, height / 2, Math.random() * 30 - 15);
+                buildings.add(building);
+            }
+            scene.add(buildings);
+
+            // Garden
+            garden = new THREE.Group();
+            for (let i = 0; i < 50; i++) {
+                const geometry = new THREE.SphereGeometry(0.3, 32, 32);
+                const material = new THREE.MeshPhongMaterial({color: 0x00FF00});
+                const plant = new THREE.Mesh(geometry, material);
+                plant.position.set(Math.random() * 40 - 20, 0.3, Math.random() * 40 - 20);
+                garden.add(plant);
+            }
+            scene.add(garden);
+
+            // Birds
+            birds = new THREE.Group();
+            for (let i = 0; i < 10; i++) {
+                const birdGeometry = new THREE.ConeGeometry(0.1, 0.5, 4);
+                const birdMaterial = new THREE.MeshPhongMaterial({color: 0xFFFFFF});
+                const bird = new THREE.Mesh(birdGeometry, birdMaterial);
+                bird.rotation.x = Math.PI / 2;
+                bird.position.set(Math.random() * 40 - 20, Math.random() * 10 + 5, Math.random() * 40 - 20);
+                bird.userData = {
+                    speed: Math.random() * 0.05 + 0.02,
+                    rotationSpeed: Math.random() * 0.02 - 0.01
+                };
+                birds.add(bird);
+            }
+            scene.add(birds);
+
+            camera.position.set(0, 10, 30);
+            camera.lookAt(scene.position);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+
+            // Animate buildings (subtle sway)
+            buildings.children.forEach(building => {
+                building.rotation.y = Math.sin(Date.now() * 0.001 + building.position.x) * 0.02;
+            });
+
+            // Animate garden (gentle bobbing)
+            garden.children.forEach(plant => {
+                plant.position.y = Math.sin(Date.now() * 0.002 + plant.position.x) * 0.1 + 0.3;
+            });
+
+            // Animate birds
+            birds.children.forEach(bird => {
+                bird.position.x += Math.sin(bird.rotation.y) * bird.userData.speed;
+                bird.position.z += Math.cos(bird.rotation.y) * bird.userData.speed;
+                bird.rotation.y += bird.userData.rotationSpeed;
+
+                // Keep birds within bounds
+                if (bird.position.x > 20) bird.position.x = -20;
+                if (bird.position.x < -20) bird.position.x = 20;
+                if (bird.position.z > 20) bird.position.z = -20;
+                if (bird.position.z < -20) bird.position.z = 20;
+
+                // Make birds bob up and down
+                bird.position.y = Math.sin(Date.now() * 0.003 + bird.position.x) * 0.5 + 7;
+            });
+
+            // Rotate camera slowly around the scene
+            camera.position.x = Math.sin(Date.now() * 0.0001) * 30;
+            camera.position.z = Math.cos(Date.now() * 0.0001) * 30;
+            camera.lookAt(scene.position);
+
+            renderer.render(scene, camera);
+        }
+
+        init();
+        animate();
+
+        window.addEventListener('resize', function() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
